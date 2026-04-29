@@ -18,14 +18,35 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let isRefreshing = false;
+let refreshQueue: Array<(token: string) => void> = [];
+
 // Auto-refresh on 401
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    if (error.response?.status === 401 && !error.config._retry) {
-      error.config._retry = true;
+    const original = error.config;
+
+    if (error.response?.status === 401 && !original._retry) {
+      original._retry = true;
+
+      if (isRefreshing) {
+        // Queue this request until refresh completes
+        return new Promise((resolve) => {
+          refreshQueue.push((token: string) => {
+            original.headers['Authorization'] = `Bearer ${token}`;
+            resolve(api(original));
+          });
+        });
+      }
+
+      isRefreshing = true;
+
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = typeof window !== 'undefined'
+          ? localStorage.getItem('refresh_token')
+          : null;
+
         if (!refreshToken) throw new Error('no refresh token');
 
         const res = await axios.post(`${API_URL}/auth/refresh`, {
@@ -36,16 +57,24 @@ api.interceptors.response.use(
         localStorage.setItem('access_token', access_token);
         localStorage.setItem('refresh_token', refresh_token);
 
-        error.config.headers['Authorization'] = `Bearer ${access_token}`;
-        return api(error.config);
+        // Flush queued requests
+        refreshQueue.forEach((cb) => cb(access_token));
+        refreshQueue = [];
+
+        original.headers['Authorization'] = `Bearer ${access_token}`;
+        return api(original);
       } catch {
         // Refresh failed — clear and redirect to login
+        refreshQueue = [];
         if (typeof window !== 'undefined') {
           localStorage.clear();
           window.location.href = '/login';
         }
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );

@@ -7,32 +7,44 @@ import { api, User, ProfilesResponse } from '@/lib/api';
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [stats, setStats] = useState({ total: 0, male: 0, female: 0, countries: 0 });
+  const [stats, setStats] = useState({ total: 0, male: 0, female: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if we have a token at all before making requests
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.replace('/login');
+      return;
+    }
+
     const load = async () => {
       try {
-        const [meRes, allRes, maleRes, femaleRes] = await Promise.all([
-          api.get('/auth/me'),
+        // Sequential: get user first, then stats
+        // The axios interceptor handles 401 → refresh automatically
+        const meRes = await api.get('/auth/me');
+        setUser(meRes.data.data);
+
+        const [allRes, maleRes, femaleRes] = await Promise.all([
           api.get<ProfilesResponse>('/api/profiles', { params: { limit: 1 } }),
           api.get<ProfilesResponse>('/api/profiles', { params: { gender: 'male', limit: 1 } }),
           api.get<ProfilesResponse>('/api/profiles', { params: { gender: 'female', limit: 1 } }),
         ]);
 
-        setUser(meRes.data.data);
         setStats({
           total: allRes.data.total,
           male: maleRes.data.total,
           female: femaleRes.data.total,
-          countries: 0, // approximate
         });
       } catch {
-        router.push('/login');
+        // Only redirect if we truly can't authenticate
+        // The interceptor already tried to refresh before we get here
+        router.replace('/login');
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, [router]);
 
