@@ -17,6 +17,7 @@ func main() {
 	storage.Init(configs.AppConfig.DatabaseURL)
 
 	r := gin.New()
+	r.SetTrustedProxies(nil) // trust no proxies by default; Railway handles TLS termination
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORS()) // Must be first — grading script requires Access-Control-Allow-Origin: *
 	r.Use(middleware.RequestLogger())
