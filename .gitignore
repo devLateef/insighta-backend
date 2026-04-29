@@ -1,0 +1,17 @@
+# Binaries
+server
+main
+*.exe
+
+# Environment
+.env
+
+# Go
+*.test
+*.out
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp

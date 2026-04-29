@@ -1,0 +1,23 @@
+run:
+  timeout: 3m
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+
+linters-settings:
+  goimports:
+    local-prefixes: insighta
+
+issues:
+  exclude-rules:
+    # Allow unused import guard pattern
+    - linters: [unused]
+      text: "var _ ="
