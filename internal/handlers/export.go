@@ -47,14 +47,18 @@ func ExportCSV(c *gin.Context) {
 	defer writer.Flush()
 
 	// Header row — exact columns per spec
-	writer.Write([]string{
+	if err := writer.Write([]string{
 		"id", "name", "gender", "gender_probability",
 		"age", "age_group", "country_id", "country_name",
 		"country_probability", "created_at",
-	})
+	}); err != nil {
+		return
+	}
 
 	for _, p := range profiles {
-		writer.Write(profileToCSVRow(p))
+		if err := writer.Write(profileToCSVRow(p)); err != nil {
+			return
+		}
 	}
 }
 

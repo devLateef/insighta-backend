@@ -11,7 +11,9 @@ import (
 // GenerateCSRFToken creates a random CSRF token.
 func GenerateCSRFToken() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand failed: " + err.Error())
+	}
 	return base64.StdEncoding.EncodeToString(b)
 }
 

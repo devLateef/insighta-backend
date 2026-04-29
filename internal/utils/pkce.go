@@ -9,14 +9,18 @@ import (
 // GenerateState generates a random state string for OAuth CSRF protection.
 func GenerateState() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand failed: " + err.Error())
+	}
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
 // GenerateVerifier generates a PKCE code_verifier (random 32-byte base64url string).
 func GenerateVerifier() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand failed: " + err.Error())
+	}
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 

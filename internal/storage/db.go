@@ -110,7 +110,7 @@ func ValidateAndRotateRefreshToken(token string) (string, error) {
 
 	if time.Now().After(expiresAt) {
 		// Clean up expired token
-		DB.Exec(`DELETE FROM refresh_tokens WHERE token_hash = $1`, hash)
+		_, _ = DB.Exec(`DELETE FROM refresh_tokens WHERE token_hash = $1`, hash)
 		return "", fmt.Errorf("refresh token expired")
 	}
 

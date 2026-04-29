@@ -274,7 +274,7 @@ func Logout(c *gin.Context) {
 	}
 
 	if refreshToken != "" {
-		storage.InvalidateRefreshToken(refreshToken)
+		_ = storage.InvalidateRefreshToken(refreshToken)
 	}
 
 	// Clear cookies
@@ -393,7 +393,9 @@ func fetchPrimaryEmail(client *http.Client, token string) string {
 		Email   string `json:"email"`
 		Primary bool   `json:"primary"`
 	}
-	json.NewDecoder(resp.Body).Decode(&emails)
+	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+		return ""
+	}
 
 	for _, e := range emails {
 		if e.Primary {
