@@ -17,6 +17,7 @@ type Config struct {
 	CallbackURL       string
 	GithubRedirectURI string
 	WebPortalURL      string
+	TestMode          bool
 }
 
 var AppConfig *Config
@@ -32,6 +33,7 @@ func Load() {
 		BaseURL:        getEnv("BASE_URL", "http://localhost:8080"),
 		DatabaseURL:    getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/insighta?sslmode=disable"),
 		WebPortalURL:   getEnv("WEB_PORTAL_URL", "http://localhost:3000"),
+		TestMode:       os.Getenv("TEST_MODE") == "true",
 	}
 
 	AppConfig.GithubRedirectURI = AppConfig.BaseURL + "/auth/github/callback"

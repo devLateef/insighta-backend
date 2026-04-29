@@ -40,7 +40,7 @@ func GithubLogin(c *gin.Context) {
 	params.Set("state", state)
 
 	// Store state in cookie for validation on callback
-	c.SetCookie("oauth_state", state, 600, "/", "", false, true)
+	c.SetCookie("oauth_state", state, 600, "/", "", false, true) // HttpOnly=true
 
 	// If CLI provided a redirect_uri, store it so callback can redirect back
 	if redirectURI != "" {
@@ -261,14 +261,18 @@ func RefreshToken(c *gin.Context) {
 
 // ─── POST /auth/logout ────────────────────────────────────────────────────────
 func Logout(c *gin.Context) {
+	refreshToken := ""
+
+	// Try JSON body (ignore parse errors — body is optional)
 	var body struct {
 		RefreshToken string `json:"refresh_token"`
 	}
-
-	refreshToken := ""
-	if err := c.ShouldBindJSON(&body); err == nil && body.RefreshToken != "" {
+	if err := c.ShouldBindJSON(&body); err == nil {
 		refreshToken = body.RefreshToken
-	} else {
+	}
+
+	// Fall back to cookie
+	if refreshToken == "" {
 		rt, _ := c.Cookie("refresh_token")
 		refreshToken = rt
 	}
@@ -277,7 +281,7 @@ func Logout(c *gin.Context) {
 		_ = storage.InvalidateRefreshToken(refreshToken)
 	}
 
-	// Clear cookies
+	// Clear cookies regardless
 	c.SetCookie("access_token", "", -1, "/", "", false, true)
 	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 
