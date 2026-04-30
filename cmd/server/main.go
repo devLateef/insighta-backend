@@ -44,14 +44,14 @@ func main() {
 
 	// ── Protected auth routes ─────────────────────────────────────────────────
 	authProtected := r.Group("/auth")
-	authProtected.Use(middleware.JWTAuth())
+	authProtected.Use(middleware.JWTAuthStrict()) // DB check needed here
 	{
 		authProtected.GET("/me", handlers.Me)
 	}
 
 	// ── /api/users/me — alias expected by grader ──────────────────────────────
 	apiUsers := r.Group("/api/users")
-	apiUsers.Use(middleware.JWTAuth())
+	apiUsers.Use(middleware.JWTAuthStrict()) // DB check needed here
 	{
 		apiUsers.GET("/me", handlers.Me)
 	}

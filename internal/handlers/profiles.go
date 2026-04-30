@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,7 +26,8 @@ func GetProfiles(c *gin.Context) {
 
 	profiles, total, err := storage.ListProfiles(filter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "internal server error"})
+		log.Printf("GetProfiles error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
