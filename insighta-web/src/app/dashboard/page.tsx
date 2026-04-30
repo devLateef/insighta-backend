@@ -25,11 +25,10 @@ export default function DashboardPage() {
         const meRes = await api.get('/auth/me');
         setUser(meRes.data.data);
 
-        const [allRes, maleRes, femaleRes] = await Promise.all([
-          api.get<ProfilesResponse>('/api/profiles', { params: { limit: 1 } }),
-          api.get<ProfilesResponse>('/api/profiles', { params: { gender: 'male', limit: 1 } }),
-          api.get<ProfilesResponse>('/api/profiles', { params: { gender: 'female', limit: 1 } }),
-        ]);
+        // Sequential to avoid exhausting Neon free tier connection pool
+        const allRes = await api.get<ProfilesResponse>('/api/profiles', { params: { limit: 1 } });
+        const maleRes = await api.get<ProfilesResponse>('/api/profiles', { params: { gender: 'male', limit: 1 } });
+        const femaleRes = await api.get<ProfilesResponse>('/api/profiles', { params: { gender: 'female', limit: 1 } });
 
         setStats({
           total: allRes.data.total,

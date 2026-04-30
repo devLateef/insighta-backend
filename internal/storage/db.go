@@ -21,8 +21,8 @@ func Init(dsn string) {
 		log.Fatal("failed to open db:", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	db.SetMaxOpenConns(5) // Neon free tier has limited connections
+	db.SetMaxIdleConns(2)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
 	if err := db.Ping(); err != nil {
