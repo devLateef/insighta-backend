@@ -173,55 +173,55 @@ func GetProfileByID(id string) (*models.Profile, error) {
 
 func ListProfiles(f models.ProfileFilter) ([]*models.Profile, int, error) {
 	where := []string{"1=1"}
-	args := []any{}
+	filterArgs := []any{}
 	idx := 1
 
 	if f.Gender != "" {
 		where = append(where, fmt.Sprintf("gender = $%d", idx))
-		args = append(args, f.Gender)
+		filterArgs = append(filterArgs, f.Gender)
 		idx++
 	}
 	if f.CountryID != "" {
 		where = append(where, fmt.Sprintf("country_id = $%d", idx))
-		args = append(args, strings.ToUpper(f.CountryID))
+		filterArgs = append(filterArgs, strings.ToUpper(f.CountryID))
 		idx++
 	}
 	if f.AgeGroup != "" {
 		where = append(where, fmt.Sprintf("age_group = $%d", idx))
-		args = append(args, f.AgeGroup)
+		filterArgs = append(filterArgs, f.AgeGroup)
 		idx++
 	}
 	if f.MinAge > 0 {
 		where = append(where, fmt.Sprintf("age >= $%d", idx))
-		args = append(args, f.MinAge)
+		filterArgs = append(filterArgs, f.MinAge)
 		idx++
 	}
 	if f.MaxAge > 0 {
 		where = append(where, fmt.Sprintf("age <= $%d", idx))
-		args = append(args, f.MaxAge)
+		filterArgs = append(filterArgs, f.MaxAge)
 		idx++
 	}
 	if f.MinGenderProbability > 0 {
 		where = append(where, fmt.Sprintf("gender_probability >= $%d", idx))
-		args = append(args, f.MinGenderProbability)
+		filterArgs = append(filterArgs, f.MinGenderProbability)
 		idx++
 	}
 	if f.MinCountryProbability > 0 {
 		where = append(where, fmt.Sprintf("country_probability >= $%d", idx))
-		args = append(args, f.MinCountryProbability)
+		filterArgs = append(filterArgs, f.MinCountryProbability)
 		idx++
 	}
 
 	whereClause := strings.Join(where, " AND ")
 
-	// Count total matching rows
+	// Count — uses only filter args (no pagination args)
 	var total int
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM profiles WHERE %s", whereClause)
-	if err := DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
+	if err := DB.QueryRow(countQuery, filterArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Sort — only allow the three fields Stage 2 specifies
+	// Sort
 	allowedSort := map[string]bool{
 		"age":                 true,
 		"created_at":          true,
@@ -249,6 +249,11 @@ func ListProfiles(f models.ProfileFilter) ([]*models.Profile, int, error) {
 	}
 	offset := (f.Page - 1) * f.Limit
 
+	// Build query args: filter args + pagination args (separate slice to avoid mutation)
+	queryArgs := make([]any, len(filterArgs), len(filterArgs)+2)
+	copy(queryArgs, filterArgs)
+	queryArgs = append(queryArgs, f.Limit, offset)
+
 	query := fmt.Sprintf(`
 		SELECT id, name, gender, gender_probability, age, age_group,
 		       country_id, country_name, country_probability, created_at
@@ -258,9 +263,7 @@ func ListProfiles(f models.ProfileFilter) ([]*models.Profile, int, error) {
 		LIMIT $%d OFFSET $%d
 	`, whereClause, sortBy, order, idx, idx+1)
 
-	args = append(args, f.Limit, offset)
-
-	rows, err := DB.Query(query, args...)
+	rows, err := DB.Query(query, queryArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
