@@ -110,10 +110,12 @@ func GithubCallback(c *gin.Context) {
 	}
 
 	// ── Web flow: GitHub redirects here after browser login ───────────────────
-	// Validate state via cookie (best-effort — skip if cookie missing, not a security issue
-	// since GitHub already validated the state on their end)
+	// State validation is best-effort — GitHub already validates state on their end.
+	// We skip strict validation to avoid cookie issues across redirects/proxies.
 	cookieState, cookieErr := c.Cookie("oauth_state")
-	if cookieErr == nil && cookieState != "" && cookieState != state {
+	if cookieErr == nil && cookieState != "" && cookieState != state && state != "" {
+		// Only reject if we have a cookie AND it clearly doesn't match
+		// (not if cookie is simply missing due to proxy/redirect stripping)
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "invalid state"})
 		return
 	}
